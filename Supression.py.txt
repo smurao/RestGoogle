@@ -1,0 +1,72 @@
+"""
+This code is used to update the supression list in Lead Conduit with new emails and phone numbers on a daily basis.
+Author - Sidd Murao
+"""
+
+import pypyodbc, json, requests
+community=[['vi_grayhawk_emailphone',11],['vi_at_aventura_emailphone',19],\
+           ['Vi_TidePointe_EmailPhone',1],['Vi_at_Glenview_EmailPhone',13],\
+           ['Vi_at_Highlands_Ranch_EmailPhone',12],['Vi_at_La_Jolla_Village_EmailPhone',16],\
+           ['Vi_at_Lakeside_Village_EmailPhone',17],['Vi_at_Palo_Alto_EmailPhone',21],\
+           ['Vi_at_Silverstone_EmailPhone',27],['Vi_at_Bentley_Village_EmailPhone',8]]
+a=[0,1,2,3,4,5,6,7,8,9]
+connection = pypyodbc.connect('Driver={SQL Server};'
+                                'Server=hcjdebidb2;'
+                                'Database=PROD_BI;'
+                                'uid=sa;pwd=vibi') 
+#connection ='Driver={SQL Server Native Client 11.0};Server=hcjdebidb2;Database=PROD_BI;Uid=sa;Pwd=vibi;'
+cursor = connection.cursor() 
+
+for i in a:
+  SQLCommand =  ("select 'values'   , (select  case when (select count (*) from EMAILPHONEVALUES where \
+  communityidy = %d  ) >1 then (emailphone + '|') else emailphone   end from EMAILPHONEVALUES  where communityidy= %d  and emailphone is not null  for xml path(''))" %(community[i][1] , community[i][1] ))
+  cursor.execute(SQLCommand) 
+  results = cursor.fetchall() 
+  rowarray=[]
+  for  result in results:
+               rowarray.append(result)
+  t=(rowarray)   
+  #print(rowarray)
+  js= json.dumps(dict(results))
+  print(js)
+  headers = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  }
+  var = community[i][0]
+  data =js 
+  print(data)
+  r= requests.post('https://app.suppressionlist.com/lists/%s/items' % var, headers=headers, data=js, auth =("API","81c77876ed128d6da45fa9d3cc5041ec"))
+  print (r.status_code)
+connection.close()
+"""
+
+#  multiple values
+SQLCommand = ("select 'values' , (select emailphone + '|'from Test_values for xml path(''))") 
+cursor.execute(SQLCommand) 
+results = cursor.fetchall() 
+
+rowarray=[]
+#print (results[1])
+
+for  result in results:
+               rowarray.append(result)
+t=(rowarray)   
+print(rowarray)
+js= json.dumps(dict(results))
+print(js)
+
+
+
+headers = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+}
+data =js 
+print(data)
+r= requests.post('https://app.suppressionlist.com/lists/vi_grayhawk_emailphone/items', headers=headers, data=js, auth =("API","81c77876ed128d6da45fa9d3cc5041ec"))
+print (r.status_code)
+
+connection.close()
+
+"""
